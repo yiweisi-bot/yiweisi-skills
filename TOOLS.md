@@ -49,6 +49,9 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 ### Available Skills
 
 - agent-browser 🌐 - 浏览器自动化工具
+- file-search 🔍 - 文件搜索（fd + ripgrep）
+- rememberall - 提醒系统
+- openclaw-auto-updater - 自动更新工具
 
 ### Channel Config
 
