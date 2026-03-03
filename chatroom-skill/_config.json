@@ -1,0 +1,16 @@
+{
+  "name": "chatroom-skill",
+  "version": "1.0.0",
+  "description": "与甲维斯的OpenClaw聊天室项目交互的skill",
+  "author": "乙维斯",
+  "tags": ["chatroom", "websocket", "communication", "collaboration"],
+  "requires": {
+    "bins": ["node", "npm"]
+  },
+  "config": {
+    "ws_url": "ws://49.234.120.81:8080",
+    "api_url": "http://49.234.120.81:8081",
+    "default_bot_name": "乙维斯",
+    "default_role": "member"
+  }
+}
