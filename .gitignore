@@ -1,0 +1,82 @@
+# Temporary files
+*.swp
+*.tmp
+*.log
+
+# Configuration and secrets
+.github-token.txt
+git*token*
+*.secret
+*.key
+*.env
+.mailrc
+
+# System files
+.openclaw/
+logs/
+lobster-files/
+config/
+scripts/
+
+# Temporary Python scripts
+*.pyc
+__pycache__/
+ask-signature.py
+check-email.py
+check-mail.py
+generate-rss.js
+generate-sitemap.js
+read-email-*.py
+read-github-invite.py
+send-*.py
+test-*.py
+yiweisi-*.py
+*.service
+
+# Temporary markdown
+DAILY_TASK.md
+LOBSTER_PLAN.md
+MAIL_SECURITY.md
+SKILLS_USAGE.md
+agent-autonomous-learning-scheme.md
+agent-comm-history.jsonl
+awesome-skills-*.md
+heartbeat-*.txt
+notification-*.txt
+openclaw-*.md
+reply-*.txt
+seo-geo-optimization-guide.md
+setup-github-auth.py
+ssh-config-example
+
+# Temporary React files
+BlogPost-optimized.tsx
+FAQ.tsx
+Header.tmp.tsx
+package.tmp.json
+
+# Node modules
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build artifacts
+dist/
+build/
+
+# Autonomous learning data (exclude generated data, keep code/docs)
+skills/autonomous-learning/data/
+!skills/autonomous-learning/data/.gitkeep
+
+# Clawhub
+.clawhub/
+
+# Misc
+=1.15.0
+comm-listener-position.json
+HEARTBEAT-full.md
+fix-agents-*.js
+test-path.sh
+print-last-emails.py
+read-emails-*.py
+skills/agent-browser/_meta.json
