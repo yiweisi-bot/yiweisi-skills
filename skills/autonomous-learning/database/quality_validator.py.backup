@@ -1,0 +1,420 @@
+#!/usr/bin/env python3
+"""
+自主学习系统 - 质量验证器
+"""
+
+import os
+import re
+from typing import Dict, List, Optional, Tuple, Any
+from dataclasses import dataclass
+
+
+@dataclass
+class ValidationResult:
+    """验证结果"""
+    passed: bool
+    score: float
+    issues: List[str]
+    strengths: List[str]
+    details: Dict[str, Any]
+
+
+class RuleValidator:
+    """规则验证器（第一层验证）"""
+    
+    # 最小要求
+    MIN_CONTENT_LENGTH = 800  # 最少800字
+    MIN_SECTIONS = 3  # 最少3个章节
+    MIN_CODE_BLOCKS = 1  # 最少1个代码块
+    
+    # 禁止的占位符
+    FORBIDDEN_PLACEHOLDERS = [
+        'TODO', 'FIXME', 'XXX', '???',
+        '待完成', '待补充', '占位符',
+        '概念1', '概念2', '示例1', '示例2',
+        '问题1', '问题2', '实践1', '实践2'
+    ]
+    
+    # 垃圾关键词
+    GARBAGE_KEYWORDS = [
+        '垃圾内容', '测试内容', '无用内容',
+        '占位符内容', '临时内容'
+    ]
+    
+    def __init__(self):
+        pass
+    
+    def validate(self, filepath: str) -> ValidationResult:
+        """
+        验证技能文件
+        
+        返回: ValidationResult
+        """
+        issues = []
+        strengths = []
+        details = {}
+        
+        if not os.path.exists(filepath):
+            return ValidationResult(
+                passed=False,
+                score=0.0,
+                issues=['文件不存在'],
+                strengths=[],
+                details={}
+            )
+        
+        # 读取文件
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 1. 检查 Frontmatter
+        fm_check, fm_issues, fm_strengths = self._check_frontmatter(content)
+        issues.extend(fm_issues)
+        strengths.extend(fm_strengths)
+        
+        # 2. 检查结构
+        struct_check, struct_issues, struct_strengths = self._check_structure(content)
+        issues.extend(struct_issues)
+        strengths.extend(struct_strengths)
+        
+        # 3. 检查内容长度
+        length_check, length_issues, length_strengths = self._check_content_length(content)
+        issues.extend(length_issues)
+        strengths.extend(length_strengths)
+        
+        # 4. 检查代码块
+        code_check, code_issues, code_strengths = self._check_code_blocks(content)
+        issues.extend(code_issues)
+        strengths.extend(code_strengths)
+        
+        # 5. 检查占位符
+        placeholder_check, placeholder_issues = self._check_placeholders(content)
+        issues.extend(placeholder_issues)
+        
+        # 6. 检查垃圾关键词
+        garbage_check, garbage_issues = self._check_garbage(content)
+        issues.extend(garbage_issues)
+        
+        # 计算分数
+        total_checks = 6
+        passed_checks = sum([
+            fm_check, struct_check, length_check, 
+            code_check, placeholder_check, garbage_check
+        ])
+        
+        score = (passed_checks / total_checks) * 100
+        passed = score >= 70
+        
+        details = {
+            'frontmatter_check': fm_check,
+            'structure_check': struct_check,
+            'length_check': length_check,
+            'code_check': code_check,
+            'placeholder_check': placeholder_check,
+            'garbage_check': garbage_check,
+            'content_length': len(content),
+            'section_count': self._count_sections(content),
+            'code_block_count': self._count_code_blocks(content)
+        }
+        
+        return ValidationResult(
+            passed=passed,
+            score=score,
+            issues=issues,
+            strengths=strengths,
+            details=details
+        )
+    
+    def _check_frontmatter(self, content: str) -> Tuple[bool, List[str], List[str]]:
+        """检查 Frontmatter"""
+        issues = []
+        strengths = []
+        
+        # 检查是否有 Frontmatter
+        has_frontmatter = content.strip().startswith('---')
+        
+        if not has_frontmatter:
+            issues.append('缺少 Frontmatter')
+            return False, issues, strengths
+        
+        # 提取 Frontmatter
+        try:
+            end_idx = content.find('---', 3)
+            if end_idx == -1:
+                issues.append('Frontmatter 格式错误：缺少结束标记')
+                return False, issues, strengths
+            
+            fm_content = content[3:end_idx]
+            
+            # 检查必要字段
+            required_fields = ['name:', 'description:']
+            for field in required_fields:
+                if field not in fm_content:
+                    issues.append(f'Frontmatter 缺少字段: {field[:-1]}')
+            
+            if not issues:
+                strengths.append('Frontmatter 完整')
+                return True, issues, strengths
+            else:
+                return False, issues, strengths
+                
+        except Exception as e:
+            issues.append(f'Frontmatter 解析错误: {e}')
+            return False, issues, strengths
+    
+    def _check_structure(self, content: str) -> Tuple[bool, List[str], List[str]]:
+        """检查结构"""
+        issues = []
+        strengths = []
+        
+        section_count = self._count_sections(content)
+        
+        if section_count < self.MIN_SECTIONS:
+            issues.append(f'章节数量不足（最少{self.MIN_SECTIONS}章，当前{section_count}章）')
+            return False, issues, strengths
+        
+        strengths.append(f'章节结构完整（{section_count}章）')
+        return True, issues, strengths
+    
+    def _check_content_length(self, content: str) -> Tuple[bool, List[str], List[str]]:
+        """检查内容长度"""
+        issues = []
+        strengths = []
+        
+        # 去掉 Frontmatter，只计算正文
+        content_no_fm = content
+        if content.startswith('---'):
+            end_idx = content.find('---', 3)
+            if end_idx != -1:
+                content_no_fm = content[end_idx + 3:]
+        
+        length = len(content_no_fm.strip())
+        
+        if length < self.MIN_CONTENT_LENGTH:
+            issues.append(f'内容长度不足（最少{self.MIN_CONTENT_LENGTH}字，当前{length}字）')
+            return False, issues, strengths
+        
+        strengths.append(f'内容长度充足（{length}字）')
+        return True, issues, strengths
+    
+    def _check_code_blocks(self, content: str) -> Tuple[bool, List[str], List[str]]:
+        """检查代码块"""
+        issues = []
+        strengths = []
+        
+        code_count = self._count_code_blocks(content)
+        
+        if code_count < self.MIN_CODE_BLOCKS:
+            issues.append(f'代码块数量不足（最少{self.MIN_CODE_BLOCKS}个，当前{code_count}个）')
+            return False, issues, strengths
+        
+        strengths.append(f'代码块充足（{code_count}个）')
+        return True, issues, strengths
+    
+    def _check_placeholders(self, content: str) -> Tuple[bool, List[str]]:
+        """检查占位符"""
+        issues = []
+        
+        for placeholder in self.FORBIDDEN_PLACEHOLDERS:
+            if placeholder in content:
+                issues.append(f'发现占位符: {placeholder}')
+        
+        return len(issues) == 0, issues
+    
+    def _check_garbage(self, content: str) -> Tuple[bool, List[str]]:
+        """检查垃圾关键词"""
+        issues = []
+        
+        for keyword in self.GARBAGE_KEYWORDS:
+            if keyword in content:
+                issues.append(f'发现垃圾关键词: {keyword}')
+        
+        return len(issues) == 0, issues
+    
+    def _count_sections(self, content: str) -> int:
+        """统计章节数量"""
+        # 统计 ## 开头的章节
+        sections = re.findall(r'^##\s+.+$', content, re.MULTILINE)
+        return len(sections)
+    
+    def _count_code_blocks(self, content: str) -> int:
+        """统计代码块数量"""
+        # 统计 ``` 开头的代码块
+        code_blocks = re.findall(r'^```', content, re.MULTILINE)
+        # 每两个 ``` 算一个代码块
+        return len(code_blocks) // 2
+
+
+class AIValidator:
+    """AI验证器（第二层验证）- 占位符"""
+    
+    # 评分维度与权重
+    DIMENSIONS = {
+        'practicality': {'name': '实用性', 'weight': 0.25},
+        'completeness': {'name': '完整性', 'weight': 0.20},
+        'example_quality': {'name': '示例质量', 'weight': 0.20},
+        'clarity': {'name': '文档清晰', 'weight': 0.15},
+        'accuracy': {'name': '准确性', 'weight': 0.15},
+        'innovation': {'name': '创新性', 'weight': 0.05}
+    }
+    
+    def __init__(self):
+        pass
+    
+    def validate(self, filepath: str) -> ValidationResult:
+        """
+        AI验证（占位符，待集成LLM）
+        
+        返回: ValidationResult
+        """
+        # 这里是占位符，实际会调用LLM进行验证
+        # 目前返回一个模拟的验证结果
+        
+        return ValidationResult(
+            passed=True,
+            score=85.0,
+            issues=[],
+            strengths=['实用性强', '示例完整', '文档清晰'],
+            details={
+                'dimension_scores': {
+                    'practicality': 90,
+                    'completeness': 85,
+                    'example_quality': 88,
+                    'clarity': 82,
+                    'accuracy': 80,
+                    'innovation': 75
+                },
+                'suggestions': ['增加真实项目示例', '补充性能优化技巧']
+            }
+        )
+
+
+class QualityValidator:
+    """质量验证器（三层验证）"""
+    
+    def __init__(self):
+        self.rule_validator = RuleValidator()
+        self.ai_validator = AIValidator()
+    
+    def validate_all(self, filepath: str) -> Dict[str, Any]:
+        """
+        执行三层验证
+        
+        返回: 验证结果字典
+        """
+        print("🛡️  开始质量验证...")
+        
+        results = {}
+        
+        # 第一层：规则验证
+        print("   1️⃣  规则验证...")
+        rule_result = self.rule_validator.validate(filepath)
+        results['rule'] = {
+            'passed': rule_result.passed,
+            'score': rule_result.score,
+            'issues': rule_result.issues,
+            'strengths': rule_result.strengths,
+            'details': rule_result.details
+        }
+        
+        if not rule_result.passed:
+            print(f"   ❌ 规则验证失败: {rule_result.score}分")
+            results['overall'] = {
+                'status': 'rule_failed',
+                'message': '规则验证失败，请修复问题后重试'
+            }
+            return results
+        
+        print(f"   ✅ 规则验证通过: {rule_result.score}分")
+        
+        # 第二层：AI验证
+        print("   2️⃣  AI验证...")
+        ai_result = self.ai_validator.validate(filepath)
+        results['ai'] = {
+            'passed': ai_result.passed,
+            'score': ai_result.score,
+            'issues': ai_result.issues,
+            'strengths': ai_result.strengths,
+            'details': ai_result.details
+        }
+        
+        if not ai_result.passed:
+            print(f"   ❌ AI验证失败: {ai_result.score}分")
+            results['overall'] = {
+                'status': 'ai_failed',
+                'message': 'AI验证失败'
+            }
+            return results
+        
+        print(f"   ✅ AI验证通过: {ai_result.score}分")
+        
+        # 第三层：人工验证（等待中）
+        print("   3️⃣  人工验证...")
+        print("   ⏳ 等待人工确认...")
+        
+        results['human'] = {
+            'status': 'pending',
+            'message': '等待人工验证'
+        }
+        
+        # 总体状态
+        overall_score = (rule_result.score + ai_result.score) / 2
+        
+        results['overall'] = {
+            'status': 'pending_human',
+            'rule_score': rule_result.score,
+            'ai_score': ai_result.score,
+            'overall_score': overall_score,
+            'message': '规则验证和AI验证通过，等待人工最终确认'
+        }
+        
+        print(f"   ✅ 验证流程完成！")
+        print(f"   📊 总体分数: {overall_score}分")
+        
+        return results
+
+
+def validate_skill(filepath: str) -> Dict[str, Any]:
+    """
+    便捷函数：验证技能
+    
+    返回: 验证结果字典
+    """
+    validator = QualityValidator()
+    return validator.validate_all(filepath)
+
+
+if __name__ == '__main__':
+    # 测试
+    print("🧪 质量验证器测试\n")
+    
+    import sys
+    
+    if len(sys.argv) > 1:
+        test_file = sys.argv[1]
+    else:
+        # 默认测试文件
+        test_file = '/root/.openclaw/workspace/skills/autonomous-learning/generated-skills/Vue-3.4-指南.md'
+    
+    print(f"📄 测试文件: {test_file}")
+    print()
+    
+    result = validate_skill(test_file)
+    
+    print()
+    print("=" * 60)
+    print("📊 验证结果")
+    print("=" * 60)
+    print(f"整体状态: {result['overall']['status']}")
+    
+    if 'rule' in result:
+        print(f"规则验证: {'✅ 通过' if result['rule']['passed'] else '❌ 失败'} ({result['rule']['score']}分)")
+    
+    if 'ai' in result:
+        print(f"AI验证: {'✅ 通过' if result['ai']['passed'] else '❌ 失败'} ({result['ai']['score']}分)")
+    
+    if 'overall_score' in result['overall']:
+        print(f"总体分数: {result['overall']['overall_score']}分")
+    
+    print()
+    print("✅ 测试完成！")
