@@ -16,7 +16,6 @@ git*token*
 logs/
 lobster-files/
 config/
-scripts/
 
 # Temporary Python scripts
 *.pyc
