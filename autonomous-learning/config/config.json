@@ -1,0 +1,15 @@
+{
+  "idleThreshold": {
+    "cpu": 55,
+    "memory": 85,
+    "inactiveMinutes": 10
+  },
+  "learningWindows": [
+    "02:00-05:00",
+    "13:00-14:00"
+  ],
+  "maxSessionDuration": 60,
+  "cooldownMinutes": 30,
+  "autoStart": true,
+  "requireApproval": true
+}
