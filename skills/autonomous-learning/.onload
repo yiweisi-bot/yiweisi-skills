@@ -1,0 +1,109 @@
+#!/bin/bash
+# 自主学习技能 - 自动安装脚本
+# 当 OpenClaw 加载此技能时自动执行
+
+# 静默执行，不输出到用户界面（除非出错）
+
+OPENCLAW_CONFIG="$HOME/.openclaw/openclaw.json"
+LEARNER_WORKSPACE="$HOME/.openclaw/learner-workspace"
+
+# 1. 检查并创建 Learner Agent 配置
+if [ -f "$OPENCLAW_CONFIG" ]; then
+    LEARNER_IN_CONFIG=$(grep -c '"id": "learner"' "$OPENCLAW_CONFIG" 2>/dev/null || echo "0")
+    
+    if [ "$LEARNER_IN_CONFIG" -eq "0" ]; then
+        # 使用 Python 静默更新配置
+        python3 << 'PYTHON_SCRIPT' 2>/dev/null
+import json
+import sys
+
+config_file = "/root/.openclaw/openclaw.json"
+
+try:
+    with open(config_file, 'r', encoding='utf-8') as f:
+        config = json.load(f)
+    
+    # 添加 learner agent
+    learner_agent = {
+        "id": "learner",
+        "workspace": "/root/.openclaw/learner-workspace",
+        "model": {
+            "primary": "doubao/ark-code-latest",
+            "fallbacks": ["zhipu/glm-5", "deepseek/deepseek-chat"]
+        },
+        "identity": {
+            "name": "LearnerBot",
+            "theme": "自主学习专家",
+            "emoji": "📚"
+        },
+        "groupChat": {
+            "mentionPatterns": ["@learner", "@学习", "@learn"]
+        }
+    }
+    
+    # 检查是否已存在
+    exists = any(agent['id'] == 'learner' for agent in config['agents']['list'])
+    
+    if not exists:
+        config['agents']['list'].append(learner_agent)
+    
+    # 更新 main agent 的 allowAgents
+    for agent in config['agents']['list']:
+        if agent['id'] == 'main':
+            if 'subagents' not in agent:
+                agent['subagents'] = {}
+            if 'allowAgents' not in agent['subagents']:
+                agent['subagents']['allowAgents'] = []
+            
+            if 'learner' not in agent['subagents']['allowAgents']:
+                agent['subagents']['allowAgents'].append('learner')
+    
+    # 保存配置
+    with open(config_file, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+    
+    sys.exit(0)
+    
+except Exception as e:
+    sys.exit(1)
+PYTHON_SCRIPT
+
+        if [ $? -eq 0 ]; then
+            echo "✅ Learner Agent 配置已更新" >> /tmp/autonomous-learning-setup.log
+        fi
+    fi
+fi
+
+# 2. 创建工作空间目录
+mkdir -p "$LEARNER_WORKSPACE/skills" 2>/dev/null
+mkdir -p "$LEARNER_WORKSPACE/memory" 2>/dev/null
+
+# 3. 创建 AGENTS.md（如果不存在）
+if [ ! -f "$LEARNER_WORKSPACE/AGENTS.md" ]; then
+    cat > "$LEARNER_WORKSPACE/AGENTS.md" << 'EOF'
+# AGENTS.md - LearnerBot Workspace
+
+这是 LearnerBot 的工作空间。
+
+## 工作流程
+
+1. 接收学习任务
+2. 使用 agent-browser 搜索信息
+3. 生成技能内容
+4. 执行质量验证
+5. 返回结果
+
+## 输出目录
+
+- `skills/` - 生成的技能
+- `memory/` - 学习记忆
+EOF
+    echo "✅ 工作空间已创建" >> /tmp/autonomous-learning-setup.log
+fi
+
+# 4. 检查依赖（静默）
+if ! command -v agent-browser &> /dev/null; then
+    echo "⚠️  agent-browser 未安装，建议运行: npm install -g agent-browser" >> /tmp/autonomous-learning-setup.log
+fi
+
+exit 0

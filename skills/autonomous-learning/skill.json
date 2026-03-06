@@ -1,0 +1,24 @@
+{
+  "name": "自主学习系统",
+  "version": "3.0.0",
+  "description": "乙维斯的自主学习系统 - 自动设定目标、收集信息、生成技能、质量验证",
+  "author": "乙维斯",
+  "emoji": "🧠",
+  "auto_setup": true,
+  "requires": {
+    "openclaw": ">=2026.2.26",
+    "agents": ["learner"],
+    "tools": ["sessions_spawn", "agent-browser"]
+  },
+  "hooks": {
+    "post_load": "python3 hooks/setup.py"
+  },
+  "scripts": {
+    "setup": "bash install.sh",
+    "learn": "python3 autonomous_learning_production.py"
+  },
+  "workspace": {
+    "skills": "~/.openclaw/learner-workspace/skills",
+    "memory": "~/.openclaw/learner-workspace/memory"
+  }
+}

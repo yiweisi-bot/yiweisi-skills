@@ -3,7 +3,7 @@
   "skills": {
     "agent-browser": {
       "version": "0.2.0",
-      "installedAt": 1770188576250
+      "installedAt": 1770774568760
     },
     "file-search": {
       "version": "1.0.0",
@@ -16,6 +16,10 @@
     "openclaw-auto-updater": {
       "version": "1.0.0",
       "installedAt": 1770273938703
+    },
+    "summarize": {
+      "version": "1.0.0",
+      "installedAt": 1772173455714
     }
   }
 }
