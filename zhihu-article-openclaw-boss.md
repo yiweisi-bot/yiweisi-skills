@@ -228,25 +228,154 @@ OpenClaw Boss
 
 ### 前提条件
 
-- 已安装 OpenClaw
-- Python 3 环境
+- ✅ 已安装 OpenClaw
+- ✅ Python 3 环境
+- ✅ Git（手动安装需要）
 
-### 安装步骤
+---
 
-**方法一：通过 ClawHub（推荐）**
+### 方法一：通过 ClawHub（推荐，但暂时不可用）⚠️
 
-在你的 OpenClaw 中直接说：
+**正常情况下**，在你的 OpenClaw 中直接说：
 ```
 安装 openclaw-boss
 ```
 
-**方法二：手动安装**
+**⚠️ 当前状态**（2026-03-10）：
+ClawHub registry API 出现问题，所有技能都无法发布。建议使用下面的 GitHub 方法。
 
+---
+
+### 方法二：通过 GitHub 安装（当前推荐）⭐
+
+**步骤 1：克隆仓库**
+
+打开终端，执行：
 ```bash
-# 克隆仓库
-git clone https://github.com/yiweisi-bot/openclaw-boss.git \
-  ~/.openclaw/workspace/skills/openclaw-boss
+cd /root/.openclaw/workspace/skills
+git clone https://github.com/yiweisi-bot/openclaw-boss.git
+```
 
+**步骤 2：验证安装**
+
+检查文件是否存在：
+```bash
+ls -la openclaw-boss/SKILL.md
+```
+
+应该看到 `SKILL.md` 文件。
+
+**步骤 3：重启 OpenClaw（如果需要）**
+
+如果 OpenClaw 正在运行，重启它以加载新技能：
+```bash
+# 停止 OpenClaw
+openclaw gateway stop
+
+# 启动 OpenClaw
+openclaw gateway start
+```
+
+**步骤 4：测试使用**
+
+对 OpenClaw 说：
+```
+评价一下我
+```
+
+如果生成了报告，说明安装成功！🎉
+
+---
+
+### 方法三：通过 skillhub 安装（备用）
+
+如果 skillhub 可用：
+```bash
+skillhub install openclaw-boss
+```
+
+---
+
+### 常见问题解答
+
+**Q1：安装后找不到技能？**
+
+A：检查技能目录是否正确：
+```bash
+ls /root/.openclaw/workspace/skills/openclaw-boss
+```
+
+应该包含以下文件：
+- `SKILL.md`
+- `package.json`
+- `scripts/` 目录
+- `README.md`
+
+**Q2：提示 Python 错误？**
+
+A：检查 Python 3 是否安装：
+```bash
+python3 --version
+```
+
+如果没有安装：
+```bash
+# Ubuntu/Debian
+sudo apt update && sudo apt install python3
+
+# CentOS/RHEL
+sudo yum install python3
+```
+
+**Q3：Git 克隆失败？**
+
+A：检查网络连接：
+```bash
+ping github.com
+```
+
+如果无法访问，可能是 DNS 问题，尝试：
+```bash
+# 使用 1.1.1.1 DNS
+echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
+```
+
+**Q4：ClawHub 什么时候恢复？**
+
+A：关注 OpenClaw Discord 或 GitHub issues 获取最新状态：
+- Discord: https://discord.gg/clawd
+- GitHub: https://github.com/openclaw/clawhub/issues
+
+---
+
+### 验证安装成功
+
+安装完成后，对 OpenClaw 说以下任意一句话：
+
+```
+"评价一下我"
+"分析一下我"
+"老板看看我"
+"生成用户报告"
+"openclaw boss"
+```
+
+如果看到类似以下的报告，说明安装成功：
+
+```
+📊 Winston 人物分析报告
+
+综合评分：82/100 - A 良好
+
+维度评分：
+• 活跃度：88/100 优秀
+• 生产力：85/100 良好
+• 安全意识：65/100 中等 ⚠️
+
+老板点评：...
+```
+
+🎉 恭喜！你的 AI 老板已上线！
 # 安装依赖
 pip3 install -r requirements.txt
 ```
